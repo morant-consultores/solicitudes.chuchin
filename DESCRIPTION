@@ -1,0 +1,22 @@
+Package: solicitudes.chuchin
+Title: solicitudes_chuchin
+Version: 0.0.0.9000
+Authors@R: 
+    person("RAFAEL", "LOPEZ", , "rlopez@morant.com.mx", role = c("cre", "aut"))
+Description: App para darle seguimuiento a las solicitudes de whatsapp,
+    clasificarlas y actualizarlas.
+License: MIT + file LICENSE
+Imports: 
+    config (>= 0.3.2),
+    golem (>= 0.4.1),
+    shiny (>= 1.7.5)
+Suggests: 
+    spelling,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Encoding: UTF-8
+Language: en-US
+LazyData: true
+RoxygenNote: 7.2.3
+URL: https://github.com/rafa0823/solicitudes.chuchin
+BugReports: https://github.com/rafa0823/solicitudes.chuchin/issues
