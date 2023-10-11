@@ -58,7 +58,7 @@ graficar_barras <- function(bd, x, y, x_label, y_label, name, tooltip, fill, pct
                   tooltip = tooltip) |>
     hc_yAxis(title = list(text = y_label,
                           style = list(fontSize = "16px", color = "#495057")),
-             labels = list(style = list(color = "#adb5bd")),
+             labels = list(enabled = FALSE),
              gridLineWidth = 0) |>
     hc_legend(enabled = FALSE)
 }

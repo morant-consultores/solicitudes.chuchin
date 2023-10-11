@@ -127,8 +127,6 @@ mod_viz_server <- function(id){
 # Gráficas ----------------------------------------------------------------
     output$g_tiempo <- renderHighchart({
       validate(need(nrow(bd_tiempo()) > 0, message = "Favor de seleccionar algún elemento de los filtros"))
-      browser()
-
       graficar_tiempo(bd_tiempo(),
                       x = "fecha",y = "n",
                       x_axis = "Fecha",

@@ -21,6 +21,7 @@ Imports:
     htmltools,
     lubridate,
     odbc,
+    pkgload,
     pool,
     shiny (>= 1.7.5),
     shinyalert,
