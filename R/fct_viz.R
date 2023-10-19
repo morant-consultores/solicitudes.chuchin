@@ -6,6 +6,24 @@
 #' @import dplyr ggplot2 highcharter
 #' @noRd
 
+#' @title Crea una base de datos con el comportamiento de la llegada de solicitudes.
+#' @description Crea una base de datos con el comportamiento de la llegada de solicitudes.
+#' @param bd Base de datos de solicitudes.
+#' @param tipo Tipo de solicitud, recibe una o múltiples solicitudes.
+#' @param nivel Nivel de urgencia, recibe uno o múltiples niveles.
+#' @return Una base de datos con el comportamiento de la llegada de solicitudes.
+#' @example crear_base_tiempo(solicitudes, input$sel_tipo, input$sel_nivel)
+
+crear_base_tiempo <- function(bd, tipo, nivel) {
+  bd %>%
+    filter(tipo_solicitud %in% tipo,
+           urgencia %in% nivel) %>%
+    group_by(fecha = lubridate::as_date(fecha)) %>%
+    summarise(n = n()) %>%
+    arrange(fecha)
+}
+
+
 contar_variable <-  function(bd, var){
   bd |>
     summarise(n = n(), .by = all_of(var)) |>
@@ -109,8 +127,7 @@ graficar_rainclouds <- function(bd, x, y, color, titulo, eje_x){
     ) +
     ggdist::stat_slab(
       fill =  color,
-      position = position_nudge(y = 0.075),
-      heigth = 0.75
+      position = position_nudge(y = 0.075)
     ) +
     labs(title = titulo, x = eje_x) +
     theme_minimal() +

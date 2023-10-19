@@ -5,7 +5,7 @@
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'#' @noRd
 #' @importFrom shinyWidgets pickerInput pickerOptions actionBttn awesomeCheckboxGroup
-#' @importFrom shinyjs hidden show hide
+#' @importFrom shinyjs hidden show hide toggle
 #' @importFrom shiny NS tagList
 #'
 
@@ -90,8 +90,8 @@ mod_viz_ui <- function(id){
       ),
       layout_sidebar(
         fillable = FALSE,
-        position = "right",
         sidebar = sidebar(
+          position = "right",
           class = "bg-light",
           title = "Filtros",
           pickerInput(
@@ -130,66 +130,22 @@ mod_viz_ui <- function(id){
              highchartOutput(ns("g_nivel"))
         )
       ),
-      # Recibidas ---------------------------------------------------------------
-      layout_column_wrap(
-        id = ns("r_recibida"),
-        width = "200px",
-        card(
-          class = "bg-light",
-          card_header("Tiempo en recibido"),
-          plotOutput(ns("prom_recibido"))
-        ),
-        card(
-          class = "bg-light",
-          card_header("Tiempo para cambiar 'en proceso'"),
-          plotOutput(ns("prom_cambio_proc"))
-        )
+      card(class = "bg-light",
+           id = ns("r_recibida"),
+           card_header("Análisis de solicitudes recibidas"),
+           layout_columns(
+             plotOutput(ns("prom_recibido")),
+             plotOutput(ns("prom_cambio_proc"))
+           )
       ),
-      # En proceso --------------------------------------------------------------
-      shinyjs::hidden(
-        layout_column_wrap(
-          id = ns("r_proceso"),
-          width = "200px",
-          card(
-            class = "bg-light",
-            card_header("Tiempo promedio siendo atendida"),
-            plotOutput(ns("prom_atencion"))
-          ),
-          card(
-            class = "bg-light",
-            card_header("Tiempo para cambiar a 'atendida'"),
-            plotOutput(ns("prom_cambio_aten"))
-          )
-        )
-      ),
-      # Rechazadas --------------------------------------------------------------
-      layout_columns(
-        col_widths = c(-2,8,-2),
-        id = ns("r_rechazada"),
-        card(
-          class = "bg-light",
-          card_header("Distribución de solicitudes rechzadas por tipo"),
-          plotOutput(ns("tipo_rechazo"))
-        )
-      ),
-      # Atendidas ---------------------------------------------------------------
-      layout_columns(
-        id = ns("r_atendida"),
-        col_widths = c(6,6,12),
-        card(
-          class = "bg-light",
-          card_header("Tiempo promedio entre recepción y atención"),
-          plotOutput(ns("prom_rec_aten"))
-        ),
-        card(
-          class = "bg-light",
-          card_header("Tiempo promedio entre 'en proceso' y atención"),
-          plotOutput(ns("prom_proc_aten"))
-        ),
-        card(
-          class = "bg-light",
-          card_header("Bullet del maestro"),
-          plotOutput(ns("bullet"))
+      hidden(
+        card(class = "bg-light",
+             id = ns("r_proceso"),
+             card_header(HTML("Análisis de solicitudes <b>aceptadas</b>")),
+             layout_columns(
+               plotOutput(ns("prom_proc")),
+               plotOutput(ns("prom_cambio_fin"))
+             )
         )
       )
     )
@@ -203,42 +159,28 @@ mod_viz_server <- function(id){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
 
-    # observeEvent(input$filtro_gen,{
-    #   #Crear show/hides de acuerdo al estatus
-    #   browser()
-    #   if(input$estatus == "recibida"){
-    #     shinyjs::show("r_recibida")
-    #     shinyjs::hide("r_proceso")
-    #     shinyjs::hide("r_rechazada")
-    #     shinyjs::hide("r_atendida")
-    #   } else if(input$estatus == "en proceso"){
-    #     shinyjs::hide("r_recibida")
-    #     shinyjs::show("r_proceso")
-    #     shinyjs::hide("r_rechazada")
-    #     shinyjs::hide("r_atendida")
-    #   } else if(input$estatus == "rechazada"){
-    #     shinyjs::hide("r_recibida")
-    #     shinyjs::hide("r_proceso")
-    #     shinyjs::show("r_rechazada")
-    #     shinyjs::hide("r_atendida")
-    #   } else {
-    #     shinyjs::hide("r_recibida")
-    #     shinyjs::hide("r_proceso")
-    #     shinyjs::hide("r_rechazada")
-    #     shinyjs::show("r_atendida")
-    #   }
-    # })
+    # Observers ---------------------------------------------------------------
+
+    observeEvent(input$filtro_gen,{
+      toggle("r_recibida", condition = input$estatus == "recibida")
+      toggle("r_proceso", condition = input$estatus == "en proceso")
+      toggle("r_rechazada", condition = input$estatus == "rechazada")
+      toggle("r_atendida", condition = input$estatus == "finalizada")
+    })
 
     # Reactives ---------------------------------------------------------------
+    bd_inicial <- reactive({
+      input$filtro_gen
+      solicitudes |>
+        filter(estatus == isolate(input$estatus) &
+                 fecha >= isolate(input$sel_fecha)[1] & fecha <= isolate(input$sel_fecha)[2])
+    })
+
+
     bd_tiempo <- reactive({
       req(!is.null(input$sel_tipo) & !is.null(input$sel_nivel))
 
-      solicitudes %>%
-        filter(tipo_solicitud %in% input$sel_tipo,
-               urgencia %in% input$sel_nivel) %>%
-        group_by(fecha = lubridate::as_date(fecha)) %>%
-        summarise(n = n()) %>%
-        arrange(fecha)
+      crear_base_tiempo(bd_inicial(), input$sel_tipo, input$sel_nivel)
     })
 
     color <- reactiveVal("#007ea7")
@@ -274,7 +216,7 @@ mod_viz_server <- function(id){
 
     # Gráficas ----------------------------------------------------------------
     output$g_tiempo <- renderHighchart({
-      validate(need(nrow(bd_tiempo()) > 0, message = "Favor de seleccionar algún elemento de los filtros"))
+      validate(need(nrow(bd_tiempo()) > 0, "No hay datos para mostrar"))
       graficar_tiempo(bd_tiempo(),
                       x = "fecha",y = "n",
                       x_axis = "Fecha",
@@ -288,7 +230,8 @@ mod_viz_server <- function(id){
     })
 
     output$g_tipo <- renderHighchart({
-      data <- contar_variable(solicitudes, "tipo_solicitud")
+      validate(need(nrow(bd_inicial()) > 0, "No hay datos para mostrar"))
+      data <- contar_variable(bd_inicial(), "tipo_solicitud")
 
       tooltip <- list(pointFormat = "<b>Solicitudes totales</b>: {point.n}")
 
@@ -302,7 +245,8 @@ mod_viz_server <- function(id){
     })
 
     output$g_nivel <- renderHighchart({
-      data <- contar_variable(solicitudes, "urgencia")
+      validate(need(nrow(bd_inicial()) > 0, "No hay datos para mostrar"))
+      data <- contar_variable(bd_inicial(), "urgencia")
 
       tooltip <- list(pointFormat = "<b>Solicitudes totales</b>: {point.n}")
 
@@ -319,7 +263,8 @@ mod_viz_server <- function(id){
     # Recibidos ---------------------------------------------------------------
 
     output$prom_recibido <- renderPlot({
-      data <- solicitudes |>
+      validate(need(nrow(bd_inicial()) > 0, "No hay datos para mostrar"))
+      data <- bd_inicial() |>
         mutate(fecha_hoy = lubridate::now())
 
       data <- calcular_diferencia(data,
@@ -337,7 +282,8 @@ mod_viz_server <- function(id){
 
     })
     output$prom_cambio_proc <- renderPlot({
-      data <- calcular_diferencia(solicitudes,
+      validate(need(nrow(bd_inicial()) > 0, "No hay datos para mostrar"))
+      data <- calcular_diferencia(bd_inicial(),
                                   estatus = "en proceso",
                                   fecha_reciente = "fecha_proceso",
                                   fecha_antigua = "fecha")
