@@ -2,6 +2,7 @@ default:
   golem_name: solicitudes.chuchin
   golem_version: 0.0.0.9000
   app_prod: no
+  dataset: 'data_ejemplo/ex_data.csv'
 production:
   app_prod: yes
 dev:

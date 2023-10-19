@@ -1,0 +1,27 @@
+---
+title: "ex_data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ex_data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(solicitudes.chuchin)
+devtools::load_all()
+```
+
+```{r}
+dev_data <- solicitudes |> 
+  mutate(estatus = sample(c("recibida", "en proceso", "finalizada", "rechazada"), nrow(solicitudes),
+                          replace = T, prob = rep(0.25, 4)))
+         
+```

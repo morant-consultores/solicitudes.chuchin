@@ -1,0 +1,52 @@
+---
+title: "mod_viz"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{mod_viz}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(ggplot2)
+devtools::load_all()
+```
+
+## Lectura de datos de ejemplo
+
+En data-raw se creó una base de datos ejemplo donde se simulan de manera aleatoria los estatus de las solicitudes. A su vez, se crearon tiempos de espera aleatorios según la fecha correspondiente al estatus. Para leerla se puede usar el siguiente código:
+
+```{r}
+path <- app_sys("data_ejemplo/ex_data.csv")
+ex_data <- readr::read_csv(path)
+```
+
+## Funciones de visualización
+
+La primer a función calcula la diferencia de tiempo entre dos variables de tiempo
+Calcula la diferencia entre dos tiempos dependiendo del estatus. 
+Recibe cuatro parámetros, la base, el estatus, la fecha más reciente y la más antigua
+
+
+```{r}
+data <- calcular_diferencia(ex_data, "finalizada", "fecha_atendida", "fecha")
+
+data
+```
+
+Esta función grafica el tiempo de espera de las solicitudes por estatus.
+Con ggplot2 y ggdist se grafica un raincloud plot. Un Raincloud plot es la combinación de boxplot, geom_point y un geom_density Recibe como parámetros la base de datos, el estatus, el color y el título.
+
+```{r}
+graficar_rainclouds(data, "dif", "estatus", "#2a9d8f", "Tiempo de espera de las solicitudes finalizadas", "Tiempo de espera (horas)")
+```
+
+
+

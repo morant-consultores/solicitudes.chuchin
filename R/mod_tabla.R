@@ -5,18 +5,32 @@
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
 #' @noRd
-#' @import DT shinyjs shinyalert
+#' @importFrom DT datatable renderDT DTOutput
 #' @importFrom shiny NS tagList
 mod_tabla_ui <- function(id){
   ns <- NS(id)
   tagList(
-    shinyjs::useShinyjs(),
-    DT::DTOutput(ns("tabla"))
-    # card(
-    #   class = "p-0",
-    #   card_header("Solicitudes"),
-    #   DT::DTOutput(ns("tabla"))
-    # )
+    layout_sidebar(
+      fillable = F,
+      sidebar = sidebar(
+        class = "bg-light",
+        title = "Estatus de solicitudes",
+        selectInput(
+          inputId = ns("sel_solicitud"),
+          label = "Tipo de solicitud",
+          choices = c("Seleccione..." = "", sort(unique(solicitudes$estatus))),
+          selected = ""
+        ),
+        actionBttn(
+          inputId = ns("btn_nueva_solicitud"),
+          label = "Nueva solicitud",
+          icon = icon("plus"),
+          style = "minimal",
+          color = "success"
+        )
+      ),
+      DT::DTOutput(ns("tabla"))
+    )
   )
 }
 
@@ -27,31 +41,55 @@ mod_tabla_server <- function(id){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
 
-    output$tabla <- renderDT({
-      data <- seleccionar_variables(solicitudes) |>
-        mutate(
-          Atender = input_btns(inputId = ns("estatus"),
+    bd_tabla <- eventReactive(input$btn_nueva_solicitud, {
+      req(input$sel_solicitud != "")
+      data <- solicitudes |>
+        filter(estatus == input$sel_solicitud) |>
+        seleccionar_variables()
+
+      if(input$sel_solicitud != "finalizada"){
+        data <- data |>
+          mutate(Atender = input_btns(inputId = ns("estatus"),
                                as.character(id),
                                tooltip = "Cambiar estatus",
                                icon = icon("arrow-right"),
-                               status = "default", label = "")
-        ) |>
-        select(-id)
+                               status = "default", label = "")) |>
+          select(-id)
+      }
+      data
+    })
 
-      crear_tabla(data)
+    output$tabla <- renderDT({
+      crear_tabla(bd_tabla())
     })
 
     observeEvent(input$estatus, {
+      if(input$sel_solicitud == "recibida"){
+        choices <- c("Aceptada" = "en proceso", "Rechazada" = "rechazada")
+      } else if(input$sel_solicitud == "en proceso"){
+        choices <- c("Finalizada" = "finalizada", "Rechazada" = "rechazada")
+      } else if(input$sel_solicitud == "rechazada"){
+        choices <- c("Aceptar" = "en proceso")
+      }
+
       showModal(
-        modalDialog(
-          title = "¿Qué estatus desea asignar a la solicitud seleccionada?",
-          pickerInput(inputId = ns("sel_estatus"), "Estatus", c("Aceptada", "Rechazada", "Pendiente"),
-                      selected = "Pendiente"),
-          easyClose = T,
-          footer = actionBttn(inputId = ns("aceptar"), label =  "Aceptar", icon = icon("check"),
-                              style = "minimal", color = "success")
-        )
+          modalDialog(
+            title = "¿Qué estatus desea asignar a la solicitud seleccionada?",
+            pickerInput(inputId = ns("sel_estatus"), "Estatus", choices),
+            shinyjs::hidden(textAreaInput(inputId = ns("txt_motivo"), "Motivo de rechazo")),
+            easyClose = T,
+            footer = actionBttn(inputId = ns("aceptar"), label =  "Aceptar", icon = icon("check"),
+                                style = "minimal", color = "success")
+          )
       )
+    })
+
+    observeEvent(input$sel_estatus, {
+      if(input$sel_estatus == "rechazada"){
+        shinyjs::show("txt_motivo")
+      } else{
+        shinyjs::hide("txt_motivo")
+      }
     })
 
     observeEvent(input$aceptar,{

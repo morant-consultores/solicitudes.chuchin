@@ -39,7 +39,7 @@ golem::add_sass_file("custom")
 
 ## Add internal datasets ----
 ## If you have data in your package
-usethis::use_data_raw(name = "my_dataset", open = FALSE)
+usethis::use_data_raw(name = "data_ejemplo", open = FALSE)
 
 ## Tests ----
 ## Add one line by test you want to create
@@ -48,7 +48,7 @@ usethis::use_test("app")
 # Documentation
 
 ## Vignette ----
-usethis::use_vignette("solicitudes.chuchin")
+usethis::use_vignette("mod_viz")
 devtools::build_vignettes()
 
 ## Code Coverage----

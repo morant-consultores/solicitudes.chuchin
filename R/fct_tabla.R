@@ -3,7 +3,7 @@
 #' @description A fct function
 #'
 #' @return The return value, if any, from executing the function.
-#' @import htmltools
+#' @importFrom htmltools tagList HTML doRenderTags
 #' @noRd
 
 input_btns <- function(inputId, users, tooltip, icon = "", status = "default", label = "") {

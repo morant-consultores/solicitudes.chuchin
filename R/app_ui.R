@@ -3,6 +3,7 @@
 #' @param request Internal parameter for `{shiny}`.
 #'     DO NOT REMOVE.
 #' @import shiny bslib bsicons
+#' @importFrom shinyjs useShinyjs
 #' @noRd
 app_ui <- function(request) {
   tagList(
@@ -15,8 +16,7 @@ app_ui <- function(request) {
       fillable = FALSE,
       theme = bs_theme(primary = "#3586C6",
                        font_scale = NULL,
-                       preset = "cyborg",
-                       version = 5),
+                       preset = "cyborg"),
       nav_spacer(),
       nav_panel("Tablero de control", mod_viz_ui("viz_1"), icon = bs_icon("speedometer")),
       nav_panel("Seguimiento", mod_tabla_ui("tabla_1"), icon = bs_icon("table"))
@@ -43,7 +43,8 @@ golem_add_external_resources <- function() {
     bundle_resources(
       path = app_sys("app/www"),
       app_title = "solicitudes.chuchin"
-    )
+    ),
+    shinyjs::useShinyjs()
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()
   )

@@ -13,25 +13,28 @@ Imports:
     bslib,
     config (>= 0.3.2),
     DBI,
-    dbplyr,
     dplyr,
     DT,
+    ggdist,
+    ggplot2,
     golem (>= 0.4.1),
     highcharter,
     htmltools,
     lubridate,
     odbc,
-    pkgload,
     pool,
+    readr,
     shiny (>= 1.7.5),
-    shinyalert,
     shinyjs,
-    shinyWidgets,
-    stringi,
-    stringr
+    shinyWidgets
 Suggests: 
+    devtools,
+    knitr,
+    rmarkdown,
     spelling,
     testthat (>= 3.0.0)
+VignetteBuilder: 
+    knitr
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
