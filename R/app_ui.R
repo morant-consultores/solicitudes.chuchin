@@ -44,7 +44,8 @@ golem_add_external_resources <- function() {
       path = app_sys("app/www"),
       app_title = "solicitudes.chuchin"
     ),
-    shinyjs::useShinyjs()
+    shinyjs::useShinyjs(),
+    thematic::thematic_shiny()
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()
   )

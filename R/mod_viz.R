@@ -132,10 +132,10 @@ mod_viz_ui <- function(id){
       ),
       card(class = "bg-light",
            id = ns("r_recibida"),
-           card_header("Análisis de solicitudes recibidas"),
+           card_header(HTML("Análisis de solicitudes <b>recibidas</b>")),
            layout_columns(
-             plotOutput(ns("prom_recibido")),
-             plotOutput(ns("prom_cambio_proc"))
+             highchartOutput(ns("prom_recibido")),
+             highchartOutput(ns("prom_cambio_proc"))
            )
       ),
       hidden(
@@ -143,8 +143,26 @@ mod_viz_ui <- function(id){
              id = ns("r_proceso"),
              card_header(HTML("Análisis de solicitudes <b>aceptadas</b>")),
              layout_columns(
-               plotOutput(ns("prom_proc")),
-               plotOutput(ns("prom_cambio_fin"))
+               highchartOutput(ns("prom_proc")),
+               highchartOutput(ns("prom_cambio_fin"))
+             )
+        )
+      ),
+      hidden(
+        card(class = "bg-light",
+             id = ns("r_rechazada"),
+             card_header(HTML("Análisis de solicitudes <b>rechazadas</b>")),
+        )
+      ),
+      hidden(
+        card(class = "bg-light",
+             id = ns("r_finalizada"),
+             card_header(HTML("Análisis de solicitudes <b>finalizadas</b>")),
+             layout_columns(
+               col_widths = c(6,6, -2, 8, -2),
+               highchartOutput(ns("prom_rec_fin")),
+               highchartOutput(ns("prom_acep_fin")),
+               highchartOutput(ns("finalizadas_tipo_nivel"))
              )
         )
       )
@@ -165,22 +183,25 @@ mod_viz_server <- function(id){
       toggle("r_recibida", condition = input$estatus == "recibida")
       toggle("r_proceso", condition = input$estatus == "en proceso")
       toggle("r_rechazada", condition = input$estatus == "rechazada")
-      toggle("r_atendida", condition = input$estatus == "finalizada")
+      toggle("r_finalizada", condition = input$estatus == "finalizada")
     })
 
     # Reactives ---------------------------------------------------------------
     bd_inicial <- reactive({
       input$filtro_gen
       solicitudes |>
-        filter(estatus == isolate(input$estatus) &
-                 fecha >= isolate(input$sel_fecha)[1] & fecha <= isolate(input$sel_fecha)[2])
+        filter(fecha >= isolate(input$sel_fecha)[1] & fecha <= isolate(input$sel_fecha)[2])
     })
 
+    bd_estatus <- reactive({
+      bd_inicial() |>
+        filter(estatus == isolate(input$estatus))
+    })
 
     bd_tiempo <- reactive({
       req(!is.null(input$sel_tipo) & !is.null(input$sel_nivel))
 
-      crear_base_tiempo(bd_inicial(), input$sel_tipo, input$sel_nivel)
+      crear_base_tiempo(bd_estatus(), input$sel_tipo, input$sel_nivel)
     })
 
     color <- reactiveVal("#007ea7")
@@ -230,8 +251,8 @@ mod_viz_server <- function(id){
     })
 
     output$g_tipo <- renderHighchart({
-      validate(need(nrow(bd_inicial()) > 0, "No hay datos para mostrar"))
-      data <- contar_variable(bd_inicial(), "tipo_solicitud")
+      validate(need(nrow(bd_estatus()) > 0, "No hay datos para mostrar"))
+      data <- contar_variable(bd_estatus(), "tipo_solicitud")
 
       tooltip <- list(pointFormat = "<b>Solicitudes totales</b>: {point.n}")
 
@@ -245,8 +266,8 @@ mod_viz_server <- function(id){
     })
 
     output$g_nivel <- renderHighchart({
-      validate(need(nrow(bd_inicial()) > 0, "No hay datos para mostrar"))
-      data <- contar_variable(bd_inicial(), "urgencia")
+      validate(need(nrow(bd_estatus()) > 0, "No hay datos para mostrar"))
+      data <- contar_variable(bd_estatus(), "urgencia")
 
       tooltip <- list(pointFormat = "<b>Solicitudes totales</b>: {point.n}")
 
@@ -261,47 +282,123 @@ mod_viz_server <- function(id){
     })
 
     # Recibidos ---------------------------------------------------------------
-
-    output$prom_recibido <- renderPlot({
+    output$prom_recibido <- renderHighchart({
       validate(need(nrow(bd_inicial()) > 0, "No hay datos para mostrar"))
-      data <- bd_inicial() |>
+      data <- bd_estatus() |>
         mutate(fecha_hoy = lubridate::now())
 
       data <- calcular_diferencia(data,
-                                  estatus = "recibida",
                                   fecha_reciente = "fecha_hoy",
-                                  fecha_antigua = "fecha")
+                                  fecha_antigua = "fecha",
+                                  unidades = "days")
 
-      graficar_rainclouds(data,
-                          color = "#007ea7",
-                          x = "dif",
-                          y = "estatus",
-                          titulo = "Distribución del tiempo en recepción",
-                          eje_x = "Tiempo en días"
-      )
+      graficar_boxplot(data,
+                       var = "dif",
+                       nombre = "",
+                       grupo = "estatus",
+                       titulo = "Distribución del tiempo en recepción",
+                       eje_x = "Estatus",
+                       eje_y = "Tiempo en días",
+                       color = "#007ea7")
 
     })
-    output$prom_cambio_proc <- renderPlot({
-      validate(need(nrow(bd_inicial()) > 0, "No hay datos para mostrar"))
-      data <- calcular_diferencia(bd_inicial(),
-                                  estatus = "en proceso",
-                                  fecha_reciente = "fecha_proceso",
-                                  fecha_antigua = "fecha")
 
-      graficar_rainclouds(data,
-                          color = "#007ea7",
-                          x = "dif",
-                          y = "estatus",
-                          titulo = "Distribución del tiempo en recepción",
-                          eje_x = "Tiempo en días"
-      )
+    output$prom_cambio_proc <- renderHighchart({
+      validate(need(nrow(filter(solicitudes, estatus == "en proceso")) > 0, "No hay datos para mostrar"))
+      data <- bd_inicial() |>
+        filter(!is.na(fecha_proceso)) |>
+        calcular_diferencia(fecha_reciente = "fecha_proceso",
+                            fecha_antigua = "fecha")
+
+      graficar_boxplot(data,
+                       var = "dif",
+                       nombre = "",
+                       grupo = "estatus",
+                       titulo = "Tiempo entre 'recibida' y 'en proceso'",
+                       eje_x = "Estatus",
+                       eje_y = "Tiempo en días",
+                       color = "#ee9b00")
+
 
     })
 
     # En proceso --------------------------------------------------------------
+    output$prom_proc <- renderHighchart({
+      validate(need(nrow(bd_inicial()) > 0, "No hay datos para mostrar"))
+      data <- bd_estatus() |>
+        mutate(fecha_hoy = lubridate::now())
+
+      data <- calcular_diferencia(data,
+                                  fecha_reciente = "fecha_hoy",
+                                  fecha_antigua = "fecha_proceso",
+                                  unidades = "days")
+
+      graficar_boxplot(data,
+                       var = "dif",
+                       nombre = "",
+                       grupo = "estatus",
+                       titulo = "Distribución del tiempo en 'aceptada'",
+                       eje_x = "Estatus",
+                       eje_y = "Tiempo en días",
+                       color = "#ee9b00")
+
+    })
+
+    output$prom_cambio_fin <- renderHighchart({
+      validate(need(nrow(filter(bd_inicial(), estatus == "finalizada")) > 0, "No hay datos para mostrar"))
+
+      data <- bd_inicial() |>
+        filter(!is.na(fecha_atendida)) |>
+        calcular_diferencia(fecha_reciente = "fecha_atendida",
+                            fecha_antigua = "fecha_proceso")
+
+      graficar_boxplot(data,
+                       var = "dif",
+                       nombre = "",
+                       grupo = "estatus",
+                       titulo = "Tiempo entre 'aceptada' y 'finalizada'",
+                       eje_x = "Estatus",
+                       eje_y = "Tiempo en días",
+                       color = "#ee9b00")
+
+    })
 
 
+    # Rechazadas --------------------------------------------------------------
 
+    # Finalizadas -------------------------------------------------------------
+    output$prom_rec_fin <- renderHighchart({
+      data <- calcular_diferencia(bd_estatus(),
+                                  fecha_reciente = "fecha_atendida",
+                                  fecha_antigua = "fecha",
+                                  unidades = "days")
+
+      graficar_boxplot(data,
+                       var = "dif",
+                       nombre = "",
+                       grupo = "estatus",
+                       titulo = "Distribución del tiempo en 'aceptada'",
+                       eje_x = "Estatus",
+                       eje_y = "Tiempo en días",
+                       color = "#06d6a0")
+    })
+
+    output$prom_acep_fin <- renderHighchart({
+      validate(need(nrow(filter(bd_inicial(), estatus == "finalizada")) > 0, "No hay datos para mostrar"))
+      data <- calcular_diferencia(bd_estatus(),
+                                  fecha_reciente = "fecha_atendida",
+                                  fecha_antigua = "fecha_proceso",
+                                  unidades = "days")
+
+      graficar_boxplot(data,
+                       var = "dif",
+                       nombre = "",
+                       grupo = "estatus",
+                       titulo = "Distribución del tiempo en 'aceptada'",
+                       eje_x = "Estatus",
+                       eje_y = "Tiempo en días",
+                       color = "#06d6a0")
+    })
 
   })
 }

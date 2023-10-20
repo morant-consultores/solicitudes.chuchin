@@ -4,24 +4,18 @@
 \alias{calcular_diferencia}
 \title{Calcula la diferencia entre dos tiempos dependiendo del estatus}
 \usage{
-calcular_diferencia(
-  bd,
-  estatus,
-  fecha_reciente,
-  fecha_antigua,
-  unidades = "hours"
-)
+calcular_diferencia(bd, fecha_reciente, fecha_antigua, unidades = "hours")
 }
 \arguments{
 \item{bd}{base de datos}
-
-\item{estatus}{estatus de la solicitud}
 
 \item{fecha_reciente}{fecha más reciente dependiendo del estatus}
 
 \item{fecha_antigua}{fecha más antigua dependiendo del estatus}
 
 \item{unidades}{unidades de tiempo, por default es 'hours'.}
+
+\item{estatus}{estatus de la solicitud}
 }
 \description{
 Calcula la diferencia entre dos tiempos dependiendo del estatus.

@@ -93,13 +93,10 @@ graficar_barras <- function(bd, x, y, x_label, y_label, name, tooltip, fill, pct
 #' @examples
 #' data <- calcular_diferencia(ex_data, "finalizada", "fecha_atendida", "fecha")
 
-calcular_diferencia <- function(bd, estatus, fecha_reciente, fecha_antigua, unidades = "hours"){
+calcular_diferencia <- function(bd, fecha_reciente, fecha_antigua, unidades = "hours"){
   bd |>
-    filter(estatus == !!estatus) |>
-    reframe(dif = as.numeric(difftime(.data[[fecha_reciente]], .data[[fecha_antigua]], units = unidades)),
-            mean = mean(dif, na.rm = T),
-            lower = min(dif, na.rm = T),
-            upper = max(dif, na.rm = T), .by = estatus)
+    reframe(dif = round(as.numeric(difftime(.data[[fecha_reciente]], .data[[fecha_antigua]], units = unidades)),0),
+            .by = estatus)
 }
 
 #' @title Graficar rainclouds
@@ -134,5 +131,34 @@ graficar_rainclouds <- function(bd, x, y, color, titulo, eje_x){
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           axis.text.y = element_blank(),
           axis.title.y = element_blank())
+}
+
+#' @title Graficar boxplot
+#' @description Grafica un boxplot
+#' @param bd Base de datos con una columna 'dif'
+#' @param var Variable x, normalmente es 'dif'
+#' @param nombre Nombre de la variable
+#' @param color Color de la gráfica
+#' @param grupo Variable y, normalmente es 'estatus'
+#' @param titulo Título de la gráfica
+#' @param eje_x Eje x de la gráfica
+#' @param eje_y Eje y de la gráfica
+#' @return Boxplot
+#' @examples
+#' g <- graficar_boxplot(data, var = "dif", nombre = "Tiempo de espera", color = "#2a9d8f", grupo = "estatus", titulo = "Tiempo de espera de las solicitudes finalizadas", eje_x = "Tiempo de espera (horas)", eje_y = "Estatus")
+
+graficar_boxplot <- function(bd, var, nombre, color, grupo, titulo, eje_x, eje_y) {
+  ja <- data_to_boxplot(data = bd, variable = .data[[var]], name = nombre, color = color, group_var = .data[[grupo]])
+
+  highchart() |>
+    hc_chart(type = 'boxplot', inverted = TRUE) |>
+    hc_add_series_list(ja) |>
+    hc_yAxis(title = list(text = eje_y, style = list(fontSize = "16px", color = "#495057")),
+             labels = list(style = list(color = "#adb5bd")),
+             gridLineWidth = 0) |>
+    hc_xAxis(title = list(text = eje_x, style = list(fontSize = "16px", color = "#495057")),
+             categories = bd[[grupo]]) |>
+    hc_legend(enabled = FALSE) |>
+    hc_title(text = list(titulo))
 }
 

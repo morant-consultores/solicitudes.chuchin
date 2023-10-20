@@ -2,8 +2,15 @@ default:
   golem_name: solicitudes.chuchin
   golem_version: 0.0.0.9000
   app_prod: no
-  dataset: 'data_ejemplo/ex_data.csv'
+  dataset: data_ejemplo/ex_data.csv
 production:
   app_prod: yes
+  datawarehouse:
+    driver: 'ODBC Driver 17 for SQL Server'
+    database: 'DIRECTORIO'
+    server: 'tcp:morant.database.windows.net'
+    uid: !expr Sys.getenv("uid")
+    pwd: !expr Sys.getenv("pwd")
+    port: 1433
 dev:
   golem_wd: !expr golem::pkg_path()

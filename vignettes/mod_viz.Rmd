@@ -15,7 +15,6 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(ggplot2)
 devtools::load_all()
 ```
 
@@ -48,5 +47,10 @@ Con ggplot2 y ggdist se grafica un raincloud plot. Un Raincloud plot es la combi
 graficar_rainclouds(data, "dif", "estatus", "#2a9d8f", "Tiempo de espera de las solicitudes finalizadas", "Tiempo de espera (horas)")
 ```
 
+Otra alternativa de graficación con highchart, es, en primera instancia, un simple boxplot. Esta visualización ofrecerá detalle de la distribución y es consistente con el resto de visualizaciones que se presentan en el tablero
+
+```{r}
+graficar_boxplot(bd = data, var = "dif", nombre = "", color = "#495057", grupo = "estatus", titulo = "Distancia entre fechas de solicitud y proceso por estatus", eje_x = "Estatus", eje_y = "Horas")  
+```
 
 
